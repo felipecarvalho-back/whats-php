@@ -19,28 +19,55 @@ class Contacts extends NativeComponent
 
     public bool $isSearching = false;
 
+    public bool $isSearchingLoading = false;
+
     public function mount(): void
     {
         $this->refreshContacts();
     }
 
-    public function onSearchChange(): void
+    public function updatedSearchQuery(): void
     {
+        $this->onSearchChange($this->searchQuery);
+    }
+
+    public function onSearchChange(?string $value = null): void
+    {
+        if ($value !== null) {
+            $this->searchQuery = $value;
+        }
+
         $query = trim($this->searchQuery);
         if (empty($query)) {
             $this->searchResults = [];
             $this->isSearching = false;
+            $this->isSearchingLoading = false;
 
             return;
         }
 
         $this->isSearching = true;
+        $this->isSearchingLoading = true;
 
         try {
             $apiService = app(ApiService::class);
-            $this->searchResults = $apiService->searchUsers($query);
+            $cleanQuery = ltrim($query, '@');
+
+            $results = $apiService->searchUsers($cleanQuery);
+
+            // Fallback para username exato
+            if (empty($results)) {
+                $exactUser = $apiService->getUserByUsername($cleanQuery);
+                if ($exactUser && ! empty($exactUser['id'])) {
+                    $results = [$exactUser];
+                }
+            }
+
+            $this->searchResults = $results;
         } catch (Exception $e) {
             $this->searchResults = [];
+        } finally {
+            $this->isSearchingLoading = false;
         }
     }
 
@@ -49,6 +76,7 @@ class Contacts extends NativeComponent
         $this->searchQuery = '';
         $this->searchResults = [];
         $this->isSearching = false;
+        $this->isSearchingLoading = false;
     }
 
     public function startChatWithUser(int $remoteUserId, string $name, ?string $username = null, ?string $avatarUrl = null): void
@@ -151,7 +179,19 @@ class Contacts extends NativeComponent
     #[Computed]
     public function contacts(): Collection
     {
-        return Contact::query()->orderBy('name', 'asc')->get();
+        $query = Contact::query()->orderBy('name', 'asc');
+
+        if (! empty(trim($this->searchQuery))) {
+            $term = '%'.trim($this->searchQuery).'%';
+            $cleanTerm = '%'.ltrim(trim($this->searchQuery), '@').'%';
+            $query->where(function ($q) use ($term, $cleanTerm) {
+                $q->where('name', 'like', $term)
+                    ->orWhere('username', 'like', $cleanTerm)
+                    ->orWhere('email', 'like', $term);
+            });
+        }
+
+        return $query->get();
     }
 
     public function render(): View
@@ -161,6 +201,7 @@ class Contacts extends NativeComponent
             'searchQuery' => $this->searchQuery,
             'searchResults' => $this->searchResults,
             'isSearching' => $this->isSearching,
+            'isSearchingLoading' => $this->isSearchingLoading,
         ]);
     }
 }

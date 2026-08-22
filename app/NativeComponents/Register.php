@@ -22,6 +22,38 @@ class Register extends NativeComponent
 
     public bool $loading = false;
 
+    public bool $showServerConfig = false;
+
+    public string $serverUrl = '';
+
+    public function mount(): void
+    {
+        $this->serverUrl = app(ApiService::class)->getBaseUrl();
+    }
+
+    public function toggleServerConfig(): void
+    {
+        $this->showServerConfig = ! $this->showServerConfig;
+        $this->errorMessage = '';
+    }
+
+    public function setPresetUrl(string $url): void
+    {
+        $this->serverUrl = $url;
+        $this->saveServerConfig();
+    }
+
+    public function saveServerConfig(): void
+    {
+        $url = trim($this->serverUrl);
+        if (! empty($url)) {
+            app(ApiService::class)->setCustomBaseUrl($url);
+            $this->serverUrl = app(ApiService::class)->getBaseUrl();
+            $this->showServerConfig = false;
+            $this->errorMessage = 'Servidor atualizado para: '.$this->serverUrl;
+        }
+    }
+
     public function submit(): void
     {
         $this->errorMessage = '';
@@ -74,6 +106,8 @@ class Register extends NativeComponent
         return view('native.register', [
             'errorMessage' => $this->errorMessage,
             'loading' => $this->loading,
+            'showServerConfig' => $this->showServerConfig,
+            'serverUrl' => $this->serverUrl,
         ]);
     }
 }

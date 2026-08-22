@@ -54,8 +54,11 @@ class Login extends NativeComponent
     {
         $this->errorMessage = '';
 
-        if (empty(trim($this->email)) || empty(trim($this->password))) {
-            $this->errorMessage = 'Por favor, preencha o e-mail e a senha.';
+        $identifier = trim($this->email);
+        $password = trim($this->password);
+
+        if (empty($identifier) || empty($password)) {
+            $this->errorMessage = 'Por favor, preencha o e-mail/usuário e a senha.';
 
             return;
         }
@@ -64,14 +67,27 @@ class Login extends NativeComponent
 
         try {
             $apiService = app(ApiService::class);
-            $response = $apiService->login(trim($this->email), trim($this->password));
+
+            // Suporte automático a login por @username ou por E-mail
+            $emailToUse = $identifier;
+            if (! filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+                $cleanUsername = ltrim($identifier, '@');
+                $userProfile = $apiService->getUserByUsername($cleanUsername);
+                if ($userProfile && ! empty($userProfile['email'])) {
+                    $emailToUse = $userProfile['email'];
+                }
+            }
+
+            $response = $apiService->login($emailToUse, $password);
+            $user = $response['user'] ?? [];
 
             $authService = app(AuthService::class);
             $authService->saveSession(
-                userId: (int) ($response['user']['id'] ?? 1),
-                name: (string) ($response['user']['name'] ?? 'Usuário'),
-                email: (string) ($response['user']['email'] ?? $this->email),
+                userId: (int) ($user['id'] ?? 1),
+                name: (string) ($user['name'] ?? 'Usuário'),
+                email: (string) ($user['email'] ?? $emailToUse),
                 token: (string) ($response['token'] ?? ''),
+                username: (string) ($user['username'] ?? ltrim($identifier, '@'))
             );
 
             $this->replace('/');

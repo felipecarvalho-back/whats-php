@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\AuthSession;
+use App\Models\Contact;
+use App\Models\Conversation;
+use App\Models\Message;
 
 class AuthService
 {
@@ -28,8 +31,8 @@ class AuthService
 
     public function saveSession(int $userId, string $name, string $email, string $token, ?string $username = null): AuthSession
     {
-        // Desativa sessões antigas
-        AuthSession::query()->where('is_active', true)->update(['is_active' => false]);
+        // Remove qualquer sessão anterior para garantir sessão única
+        AuthSession::query()->delete();
 
         return AuthSession::query()->create([
             'user_id' => $userId,
@@ -43,6 +46,12 @@ class AuthService
 
     public function logout(): void
     {
-        AuthSession::query()->where('is_active', true)->update(['is_active' => false]);
+        // Exclui completamente as sessões ativas do SQLite local
+        AuthSession::query()->delete();
+
+        // Limpa o cache local de mensagens, conversas e contatos para privacidade
+        Message::query()->delete();
+        Conversation::query()->delete();
+        Contact::query()->delete();
     }
 }
