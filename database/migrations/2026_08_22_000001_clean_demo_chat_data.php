@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\AuthSession;
+use App\Models\Contact;
+use App\Models\Conversation;
+use App\Models\Message;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
@@ -9,7 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Os dados agora são sincronizados diretamente da API NestJS.
+        Message::query()->truncate();
+        Conversation::query()->truncate();
+        Contact::query()->truncate();
+        AuthSession::query()->truncate();
     }
 
     /**

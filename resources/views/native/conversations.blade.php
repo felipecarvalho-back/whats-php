@@ -5,6 +5,13 @@
     {{-- Barra Superior Nativa --}}
     <native:top-bar title="WhatsApp">
         <native:top-bar-action
+            id="logout"
+            label="Sair"
+            :ios-icon="Ios::RectanglePortraitAndArrowRight"
+            :android-icon="Android::Logout"
+            @press="logout"
+        />
+        <native:top-bar-action
             id="new_chat"
             label="Novo Chat"
             :ios-icon="Ios::SquareAndPencil"

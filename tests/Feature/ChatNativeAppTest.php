@@ -5,6 +5,7 @@ use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\NativeComponents\Chat;
+use App\NativeComponents\Conversations;
 use App\NativeComponents\Login;
 use Illuminate\Support\Facades\Http;
 use Native\Mobile\Testing\Native;
@@ -35,6 +36,21 @@ it('logs in successfully and redirects to conversations', function () {
 
     expect(AuthSession::current())->not->toBeNull()
         ->and(AuthSession::current()?->email)->toBe('usuario@example.com');
+});
+
+it('logs out and clears active session', function () {
+    AuthSession::query()->create([
+        'user_id' => 1,
+        'name' => 'Teste',
+        'email' => 'teste@example.com',
+        'token' => 'token123',
+        'is_active' => true,
+    ]);
+
+    Native::test(Conversations::class)
+        ->call('logout');
+
+    expect(AuthSession::current())->toBeNull();
 });
 
 it('renders the register screen', function () {

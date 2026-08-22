@@ -28,6 +28,11 @@ class Chat extends NativeComponent
         }
     }
 
+    public function goBack(): void
+    {
+        $this->navigate('/');
+    }
+
     public function sendMessage(): void
     {
         $text = trim($this->newMessage);
@@ -44,7 +49,7 @@ class Chat extends NativeComponent
         $this->newMessage = '';
     }
 
-    #[Poll(3000)]
+    #[Poll(2500)]
     public function pollMessages(): void
     {
         $conversation = $this->conversation;

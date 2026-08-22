@@ -3,9 +3,8 @@
 namespace App\NativeComponents;
 
 use App\Models\Conversation;
-use App\Services\ApiService;
 use App\Services\AuthService;
-use Exception;
+use App\Services\ChatSyncService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Computed;
@@ -17,7 +16,11 @@ class Conversations extends NativeComponent
     {
         if (! app(AuthService::class)->isAuthenticated()) {
             $this->replace('/login');
+
+            return;
         }
+
+        app(ChatSyncService::class)->syncConversations();
     }
 
     public function newChat(): void
@@ -25,24 +28,15 @@ class Conversations extends NativeComponent
         $this->navigate('/contacts');
     }
 
+    public function logout(): void
+    {
+        app(AuthService::class)->logout();
+        $this->replace('/login');
+    }
+
     public function refreshConversations(): void
     {
-        try {
-            $apiService = app(ApiService::class);
-            $remoteList = $apiService->getConversations();
-            foreach ($remoteList as $remoteItem) {
-                $conv = Conversation::query()->where('remote_id', $remoteItem['id'])->first();
-                if ($conv) {
-                    $conv->update([
-                        'last_message_content' => $remoteItem['lastMessage']['content'] ?? $conv->last_message_content,
-                        'last_message_at' => $remoteItem['lastMessage']['createdAt'] ?? $conv->last_message_at,
-                        'unread_count' => $remoteItem['unreadCount'] ?? $conv->unread_count,
-                    ]);
-                }
-            }
-        } catch (Exception $e) {
-            // Mantém dados do SQLite local
-        }
+        app(ChatSyncService::class)->syncConversations();
     }
 
     /**

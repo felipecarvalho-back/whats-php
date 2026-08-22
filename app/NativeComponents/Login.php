@@ -18,6 +18,38 @@ class Login extends NativeComponent
 
     public bool $loading = false;
 
+    public bool $showServerConfig = false;
+
+    public string $serverUrl = '';
+
+    public function mount(): void
+    {
+        $this->serverUrl = app(ApiService::class)->getBaseUrl();
+    }
+
+    public function toggleServerConfig(): void
+    {
+        $this->showServerConfig = ! $this->showServerConfig;
+        $this->errorMessage = '';
+    }
+
+    public function setPresetUrl(string $url): void
+    {
+        $this->serverUrl = $url;
+        $this->saveServerConfig();
+    }
+
+    public function saveServerConfig(): void
+    {
+        $url = trim($this->serverUrl);
+        if (! empty($url)) {
+            app(ApiService::class)->setCustomBaseUrl($url);
+            $this->serverUrl = app(ApiService::class)->getBaseUrl();
+            $this->showServerConfig = false;
+            $this->errorMessage = 'Servidor atualizado para: '.$this->serverUrl;
+        }
+    }
+
     public function submit(): void
     {
         $this->errorMessage = '';
@@ -30,31 +62,21 @@ class Login extends NativeComponent
 
         $this->loading = true;
 
-        $authService = app(AuthService::class);
-        $apiService = app(ApiService::class);
-
         try {
-            $data = $apiService->login(trim($this->email), trim($this->password));
-            $user = $data['user'] ?? [];
+            $apiService = app(ApiService::class);
+            $response = $apiService->login(trim($this->email), trim($this->password));
 
+            $authService = app(AuthService::class);
             $authService->saveSession(
-                (int) ($user['id'] ?? 1),
-                (string) ($user['name'] ?? 'Usuário'),
-                (string) ($user['email'] ?? $this->email),
-                (string) ($data['token'] ?? 'jwt_token')
+                userId: (int) ($response['user']['id'] ?? 1),
+                name: (string) ($response['user']['name'] ?? 'Usuário'),
+                email: (string) ($response['user']['email'] ?? $this->email),
+                token: (string) ($response['token'] ?? ''),
             );
 
             $this->replace('/');
         } catch (Exception $e) {
-            // Em caso de falha de conexão com backend local, permite entrar com conta demo
-            if (str_contains($this->email, 'demo') || str_contains($this->email, 'usuario')) {
-                $authService->saveSession(1, 'Usuário Demo', $this->email, 'local_demo_token');
-                $this->replace('/');
-
-                return;
-            }
-
-            $this->errorMessage = $e->getMessage() ?: 'Não foi possível conectar ao servidor.';
+            $this->errorMessage = $e->getMessage();
         } finally {
             $this->loading = false;
         }
@@ -67,6 +89,11 @@ class Login extends NativeComponent
 
     public function render(): View
     {
-        return view('native.login');
+        return view('native.login', [
+            'errorMessage' => $this->errorMessage,
+            'loading' => $this->loading,
+            'showServerConfig' => $this->showServerConfig,
+            'serverUrl' => $this->serverUrl,
+        ]);
     }
 }

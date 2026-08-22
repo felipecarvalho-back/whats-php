@@ -48,9 +48,7 @@ class Register extends NativeComponent
 
             $this->replace('/');
         } catch (Exception $e) {
-            // Fallback local
-            $authService->saveSession(1, $this->name, $this->email, 'local_demo_token');
-            $this->replace('/');
+            $this->errorMessage = $e->getMessage();
         } finally {
             $this->loading = false;
         }
@@ -63,6 +61,9 @@ class Register extends NativeComponent
 
     public function render(): View
     {
-        return view('native.register');
+        return view('native.register', [
+            'errorMessage' => $this->errorMessage,
+            'loading' => $this->loading,
+        ]);
     }
 }

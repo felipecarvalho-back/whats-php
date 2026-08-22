@@ -36,7 +36,7 @@ return [
     ],
 
     'chat_api' => [
-        'base_url' => env('CHAT_API_BASE_URL', 'http://10.0.2.2:3000'), // 10.0.2.2 para emulador Android
+        'base_url' => env('CHAT_API_BASE_URL', 'http://127.0.0.1:3000/api'),
     ],
 
 ];
