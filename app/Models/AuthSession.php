@@ -15,6 +15,7 @@ class AuthSession extends Model
         'user_id',
         'name',
         'email',
+        'username',
         'token',
         'is_active',
     ];

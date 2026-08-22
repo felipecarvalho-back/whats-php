@@ -16,6 +16,7 @@ class Contact extends Model
         'remote_id',
         'name',
         'email',
+        'username',
         'avatar_url',
         'status_message',
         'last_seen_at',

@@ -16,7 +16,7 @@ class ChatSyncService
     ) {}
 
     /**
-     * Sincroniza todas as conversas do usuário da API para o SQLite local
+     * Sincroniza todas as conversas aceitas do usuário da API para o SQLite local
      */
     public function syncConversations(): void
     {
@@ -35,6 +35,7 @@ class ChatSyncService
                     [
                         'name' => $contactData['name'] ?? 'Contato',
                         'email' => $contactData['email'] ?? null,
+                        'username' => $contactData['username'] ?? null,
                         'avatar_url' => $contactData['avatarUrl'] ?? null,
                         'status_message' => 'Disponível',
                     ]
@@ -47,6 +48,7 @@ class ChatSyncService
                     ['remote_id' => $remoteItem['id']],
                     [
                         'contact_id' => $contact->id,
+                        'status' => strtoupper($remoteItem['status'] ?? 'ACCEPTED'),
                         'last_message_content' => $lastMsg['content'] ?? null,
                         'last_message_at' => ! empty($lastMsg['createdAt']) ? $lastMsg['createdAt'] : now(),
                         'unread_count' => (int) ($remoteItem['unreadCount'] ?? 0),
@@ -55,6 +57,70 @@ class ChatSyncService
             }
         } catch (Exception $e) {
             // Mantém dados do SQLite local em caso de falha de conexão
+        }
+    }
+
+    /**
+     * Sincroniza solicitações de conversa pendentes (Instagram Direct style)
+     */
+    public function syncPendingRequests(): int
+    {
+        try {
+            $data = $this->apiService->getPendingRequests();
+            $requests = $data['requests'] ?? [];
+
+            foreach ($requests as $req) {
+                $senderData = $req['sender'] ?? null;
+                if (! $senderData) {
+                    continue;
+                }
+
+                // 1. Cria ou atualiza o contato remetente
+                $contact = Contact::query()->updateOrCreate(
+                    ['remote_id' => $senderData['id']],
+                    [
+                        'name' => $senderData['name'] ?? 'Contato',
+                        'email' => $senderData['email'] ?? null,
+                        'username' => $senderData['username'] ?? null,
+                        'avatar_url' => $senderData['avatarUrl'] ?? null,
+                        'status_message' => 'Solicitação de mensagem',
+                    ]
+                );
+
+                // 2. Cria ou atualiza a conversa com status PENDING
+                $initialMsg = $req['initialMessage'] ?? null;
+
+                $conversation = Conversation::query()->updateOrCreate(
+                    ['remote_id' => $req['id']],
+                    [
+                        'contact_id' => $contact->id,
+                        'status' => 'PENDING',
+                        'initiated_by_id' => (int) ($senderData['id'] ?? 0),
+                        'last_message_content' => $initialMsg['content'] ?? null,
+                        'last_message_at' => ! empty($initialMsg['createdAt']) ? $initialMsg['createdAt'] : now(),
+                        'unread_count' => 1,
+                    ]
+                );
+
+                // 3. Salva a mensagem inicial se existir
+                if ($initialMsg && ! empty($initialMsg['id'])) {
+                    Message::query()->updateOrCreate(
+                        ['remote_id' => $initialMsg['id']],
+                        [
+                            'conversation_id' => $conversation->id,
+                            'sender_id' => $contact->id,
+                            'content' => $initialMsg['content'],
+                            'type' => 'text',
+                            'status' => mb_strtolower($initialMsg['status'] ?? 'delivered'),
+                            'created_at' => ! empty($initialMsg['createdAt']) ? $initialMsg['createdAt'] : now(),
+                        ]
+                    );
+                }
+            }
+
+            return (int) ($data['totalPending'] ?? count($requests));
+        } catch (Exception $e) {
+            return 0;
         }
     }
 

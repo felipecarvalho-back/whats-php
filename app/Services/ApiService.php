@@ -117,7 +117,7 @@ class ApiService
     /**
      * @return array{token: string, user: array<string, mixed>}
      */
-    public function register(string $name, string $email, string $password, ?string $avatarUrl = null): array
+    public function register(string $name, string $email, string $password, ?string $username = null, ?string $avatarUrl = null): array
     {
         try {
             $payload = [
@@ -125,6 +125,10 @@ class ApiService
                 'email' => $email,
                 'password' => $password,
             ];
+
+            if ($username) {
+                $payload['username'] = ltrim(strtolower(trim($username)), '@');
+            }
 
             if ($avatarUrl) {
                 $payload['avatarUrl'] = $avatarUrl;
@@ -244,6 +248,156 @@ class ApiService
             return $response->successful() ? $response->json() : [];
         } catch (Throwable $e) {
             return [];
+        }
+    }
+
+    /**
+     * Buscar usuários por nome ou @username
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function searchUsers(string $query): array
+    {
+        try {
+            $cleanQuery = ltrim(trim($query), '@');
+            if (empty($cleanQuery)) {
+                return [];
+            }
+
+            $response = $this->client()->get('/users/search', [
+                'q' => $cleanQuery,
+            ]);
+
+            return $response->successful() ? $response->json() : [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Buscar dados de um usuário pelo @username
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getUserByUsername(string $username): ?array
+    {
+        try {
+            $cleanUsername = ltrim(trim($username), '@');
+            $response = $this->client()->get("/users/by-username/{$cleanUsername}");
+
+            return $response->successful() ? $response->json() : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Enviar solicitação de mensagem / mensagem inicial no estilo Instagram Direct
+     *
+     * @return array<string, mixed>
+     */
+    public function sendConversationRequest(string $recipientUsername, string $content, ?string $tempId = null): array
+    {
+        try {
+            $cleanUsername = ltrim(trim($recipientUsername), '@');
+            $response = $this->client()->post('/conversations/request', [
+                'recipientUsername' => $cleanUsername,
+                'content' => $content,
+                'tempId' => $tempId ?: 'tmp_'.time().'_'.uniqid(),
+            ]);
+
+            if (! $response->successful()) {
+                throw new Exception($this->extractErrorMessage($response));
+            }
+
+            return $response->json();
+        } catch (Throwable $e) {
+            $this->handleNetworkException($e);
+        }
+    }
+
+    /**
+     * Listar solicitações de mensagem pendentes recebidas
+     *
+     * @return array{totalPending: int, requests: array<int, array<string, mixed>>}
+     */
+    public function getPendingRequests(): array
+    {
+        try {
+            $response = $this->client()->get('/conversations/requests');
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return [
+                    'totalPending' => (int) ($data['totalPending'] ?? count($data['requests'] ?? [])),
+                    'requests' => (array) ($data['requests'] ?? []),
+                ];
+            }
+
+            return ['totalPending' => 0, 'requests' => []];
+        } catch (Throwable $e) {
+            return ['totalPending' => 0, 'requests' => []];
+        }
+    }
+
+    /**
+     * Aceitar solicitação de conversa
+     *
+     * @return array<string, mixed>
+     */
+    public function acceptConversation(int $conversationId): array
+    {
+        try {
+            $response = $this->client()->patch("/conversations/{$conversationId}/accept");
+
+            if (! $response->successful()) {
+                throw new Exception($this->extractErrorMessage($response));
+            }
+
+            return $response->json();
+        } catch (Throwable $e) {
+            $this->handleNetworkException($e);
+        }
+    }
+
+    /**
+     * Recusar / excluir solicitação de conversa
+     *
+     * @return array<string, mixed>
+     */
+    public function rejectConversation(int $conversationId): array
+    {
+        try {
+            $response = $this->client()->patch("/conversations/{$conversationId}/reject");
+
+            if (! $response->successful()) {
+                throw new Exception($this->extractErrorMessage($response));
+            }
+
+            return $response->json();
+        } catch (Throwable $e) {
+            $this->handleNetworkException($e);
+        }
+    }
+
+    /**
+     * Bloquear usuário
+     *
+     * @return array<string, mixed>
+     */
+    public function blockUser(int $userId): array
+    {
+        try {
+            $response = $this->client()->post("/users/{$userId}/block");
+
+            if (! $response->successful()) {
+                throw new Exception($this->extractErrorMessage($response));
+            }
+
+            return $response->json();
+        } catch (Throwable $e) {
+            $this->handleNetworkException($e);
         }
     }
 

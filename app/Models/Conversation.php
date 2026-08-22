@@ -15,6 +15,8 @@ class Conversation extends Model
 
     protected $fillable = [
         'remote_id',
+        'status',
+        'initiated_by_id',
         'contact_id',
         'last_message_content',
         'last_message_at',
@@ -25,10 +27,21 @@ class Conversation extends Model
     {
         return [
             'remote_id' => 'integer',
+            'initiated_by_id' => 'integer',
             'contact_id' => 'integer',
             'last_message_at' => 'datetime',
             'unread_count' => 'integer',
         ];
+    }
+
+    public function isPending(): bool
+    {
+        return strtoupper($this->status) === 'PENDING';
+    }
+
+    public function isAccepted(): bool
+    {
+        return strtoupper($this->status) === 'ACCEPTED';
     }
 
     public function contact(): BelongsTo

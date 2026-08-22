@@ -12,6 +12,8 @@ class Register extends NativeComponent
 {
     public string $name = '';
 
+    public string $username = '';
+
     public string $email = '';
 
     public string $password = '';
@@ -25,7 +27,7 @@ class Register extends NativeComponent
         $this->errorMessage = '';
 
         if (empty(trim($this->name)) || empty(trim($this->email)) || empty(trim($this->password))) {
-            $this->errorMessage = 'Por favor, preencha todos os campos.';
+            $this->errorMessage = 'Por favor, preencha todos os campos obrigatórios.';
 
             return;
         }
@@ -35,15 +37,23 @@ class Register extends NativeComponent
         $authService = app(AuthService::class);
         $apiService = app(ApiService::class);
 
+        $cleanUsername = ! empty(trim($this->username)) ? ltrim(strtolower(trim($this->username)), '@') : null;
+
         try {
-            $data = $apiService->register(trim($this->name), trim($this->email), trim($this->password));
+            $data = $apiService->register(
+                trim($this->name),
+                trim($this->email),
+                trim($this->password),
+                $cleanUsername
+            );
             $user = $data['user'] ?? [];
 
             $authService->saveSession(
-                (int) ($user['id'] ?? 1),
-                (string) ($user['name'] ?? $this->name),
-                (string) ($user['email'] ?? $this->email),
-                (string) ($data['token'] ?? 'jwt_token')
+                userId: (int) ($user['id'] ?? 1),
+                name: (string) ($user['name'] ?? $this->name),
+                email: (string) ($user['email'] ?? $this->email),
+                token: (string) ($data['token'] ?? 'jwt_token'),
+                username: (string) ($user['username'] ?? $cleanUsername)
             );
 
             $this->replace('/');

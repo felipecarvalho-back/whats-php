@@ -4,7 +4,9 @@ namespace App\NativeComponents;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\ApiService;
 use App\Services\ChatSyncService;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Computed;
@@ -16,6 +18,8 @@ class Chat extends NativeComponent
     public int $conversationId = 0;
 
     public string $newMessage = '';
+
+    public string $actionFeedback = '';
 
     public function mount(): void
     {
@@ -31,6 +35,64 @@ class Chat extends NativeComponent
     public function goBack(): void
     {
         $this->navigate('/');
+    }
+
+    public function acceptRequest(): void
+    {
+        $conversation = $this->conversation;
+        if (! $conversation) {
+            return;
+        }
+
+        try {
+            if ($conversation->remote_id) {
+                app(ApiService::class)->acceptConversation($conversation->remote_id);
+            }
+            $conversation->update(['status' => 'ACCEPTED']);
+            $this->actionFeedback = 'Solicitação aceita! Conversa liberada.';
+        } catch (Exception $e) {
+            // Em caso de falha de rede, aceita localmente
+            $conversation->update(['status' => 'ACCEPTED']);
+        }
+    }
+
+    public function rejectRequest(): void
+    {
+        $conversation = $this->conversation;
+        if (! $conversation) {
+            return;
+        }
+
+        try {
+            if ($conversation->remote_id) {
+                app(ApiService::class)->rejectConversation($conversation->remote_id);
+            }
+            $conversation->update(['status' => 'REJECTED']);
+            $this->replace('/requests');
+        } catch (Exception $e) {
+            $conversation->update(['status' => 'REJECTED']);
+            $this->replace('/requests');
+        }
+    }
+
+    public function blockContact(): void
+    {
+        $conversation = $this->conversation;
+        if (! $conversation) {
+            return;
+        }
+
+        $contact = $conversation->contact;
+        if ($contact && $contact->remote_id) {
+            try {
+                app(ApiService::class)->blockUser($contact->remote_id);
+            } catch (Exception $e) {
+                // Silencia falha
+            }
+        }
+
+        $conversation->update(['status' => 'REJECTED']);
+        $this->replace('/');
     }
 
     public function sendMessage(): void
@@ -85,6 +147,7 @@ class Chat extends NativeComponent
             'conversation' => $conversation,
             'contact' => $contact,
             'messages' => $this->messages,
+            'actionFeedback' => $this->actionFeedback,
         ]);
     }
 }

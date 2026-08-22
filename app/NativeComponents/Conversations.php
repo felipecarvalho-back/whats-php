@@ -20,12 +20,17 @@ class Conversations extends NativeComponent
             return;
         }
 
-        app(ChatSyncService::class)->syncConversations();
+        $this->refreshConversations();
     }
 
     public function newChat(): void
     {
         $this->navigate('/contacts');
+    }
+
+    public function goToRequests(): void
+    {
+        $this->navigate('/requests');
     }
 
     public function logout(): void
@@ -36,7 +41,9 @@ class Conversations extends NativeComponent
 
     public function refreshConversations(): void
     {
-        app(ChatSyncService::class)->syncConversations();
+        $syncService = app(ChatSyncService::class);
+        $syncService->syncConversations();
+        $syncService->syncPendingRequests();
     }
 
     /**
@@ -45,15 +52,26 @@ class Conversations extends NativeComponent
     #[Computed]
     public function conversations(): Collection
     {
-        return Conversation::with('contact')
+        return Conversation::query()
+            ->where('status', 'ACCEPTED')
+            ->with('contact')
             ->orderBy('last_message_at', 'desc')
             ->get();
+    }
+
+    #[Computed]
+    public function pendingRequestsCount(): int
+    {
+        return Conversation::query()
+            ->where('status', 'PENDING')
+            ->count();
     }
 
     public function render(): View
     {
         return view('native.conversations', [
             'conversations' => $this->conversations,
+            'pendingRequestsCount' => $this->pendingRequestsCount,
         ]);
     }
 }

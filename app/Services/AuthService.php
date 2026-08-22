@@ -21,7 +21,12 @@ class AuthService
         return $this->currentSession()?->token;
     }
 
-    public function saveSession(int $userId, string $name, string $email, string $token): AuthSession
+    public function currentUserId(): ?int
+    {
+        return $this->currentSession()?->user_id;
+    }
+
+    public function saveSession(int $userId, string $name, string $email, string $token, ?string $username = null): AuthSession
     {
         // Desativa sessões antigas
         AuthSession::query()->where('is_active', true)->update(['is_active' => false]);
@@ -30,6 +35,7 @@ class AuthService
             'user_id' => $userId,
             'name' => $name,
             'email' => $email,
+            'username' => $username,
             'token' => $token,
             'is_active' => true,
         ]);

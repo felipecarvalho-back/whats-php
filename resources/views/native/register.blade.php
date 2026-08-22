@@ -8,8 +8,8 @@
 >
     <native:column class="w-full max-w-[400] rounded-2xl bg-theme-surface p-8 shadow-sm gap-4">
         {{-- Cabeçalho / Logo --}}
-        <native:column class="w-full items-center gap-2 mb-4">
-            <native:column class="w-16 h-16 rounded-full bg-theme-primary items-center justify-center mb-2">
+        <native:column class="w-full items-center gap-2 mb-2">
+            <native:column class="w-16 h-16 rounded-full bg-theme-primary items-center justify-center mb-1">
                 <native:icon :ios="Ios::PersonBadgePlus" :android="Android::PersonAdd" :size="32" class="text-theme-on-primary" />
             </native:column>
             
@@ -18,7 +18,7 @@
             </native:text>
             
             <native:text class="text-sm text-theme-on-surface-variant text-center">
-                Cadastre-se para conversar com seus contatos
+                Cadastre-se com seu nome e @username
             </native:text>
         </native:column>
 
@@ -37,6 +37,13 @@
                 native:model="name"
                 label="Nome completo"
                 placeholder="Seu nome"
+                class="w-full"
+            />
+
+            <native:outlined-text-input
+                native:model="username"
+                label="Nome de usuário (@username)"
+                placeholder="seu_usuario"
                 class="w-full"
             />
 
