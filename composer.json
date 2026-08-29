@@ -45,12 +45,8 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Unloc\\NativephpEnhancedSplash\\": "vendor/unloc/nativephp-enhanced-splash/src/",
-<<<<<<< HEAD
             "Native\\Mobile\\Providers\\": "vendor/nativephp/mobile-network/src/",
             "Blutrixx\\Fcm\\": "vendor/blutrixx/nativephp-fcm/src/"
-=======
-            "Native\\Mobile\\Providers\\": "vendor/nativephp/mobile-network/src/"
->>>>>>> ddb81847ab41f64fd1dc4b9e6ec36ca2779c11e7
         }
     },
     "autoload-dev": {
