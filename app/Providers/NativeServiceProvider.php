@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Providers\BrowserServiceProvider;
+use Native\Mobile\Providers\NetworkServiceProvider;
 use Native\Mobile\UI\NativeUIServiceProvider;
 use Unloc\NativephpEnhancedSplash\NativephpEnhancedSplashServiceProvider;
 
@@ -40,6 +41,7 @@ class NativeServiceProvider extends ServiceProvider
             NativeUIServiceProvider::class,
             BrowserServiceProvider::class,
             NativephpEnhancedSplashServiceProvider::class,
+            NetworkServiceProvider::class,
 
         ];
     }

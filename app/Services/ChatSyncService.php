@@ -20,6 +20,10 @@ class ChatSyncService
      */
     public function syncConversations(): void
     {
+        if (! $this->apiService->isConnected()) {
+            return;
+        }
+
         try {
             $remoteList = $this->apiService->getConversations();
 
@@ -65,6 +69,10 @@ class ChatSyncService
      */
     public function syncPendingRequests(): int
     {
+        if (! $this->apiService->isConnected()) {
+            return 0;
+        }
+
         try {
             $data = $this->apiService->getPendingRequests();
             $requests = $data['requests'] ?? [];

@@ -24,6 +24,7 @@
         "laravel/tinker": "^3.0",
         "nativephp/mobile": "^4.0",
         "nativephp/mobile-browser": "^1.0",
+        "nativephp/mobile-network": "*",
         "nativephp/mobile-ui": "^0.3",
         "unloc/nativephp-enhanced-splash": "*"
     },

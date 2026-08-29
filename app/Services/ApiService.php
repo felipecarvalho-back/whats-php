@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Native\Mobile\Facades\Network;
 use Throwable;
 
 class ApiService
@@ -61,6 +62,25 @@ class ApiService
         }
 
         return $req;
+    }
+
+    /**
+     * Verifica se o dispositivo possui conexão de rede ativa
+     */
+    public function isConnected(): bool
+    {
+        try {
+            if (class_exists(Network::class)) {
+                $status = Network::status();
+                if ($status && isset($status->connected)) {
+                    return (bool) $status->connected;
+                }
+            }
+        } catch (Throwable $e) {
+            // Silencia falhas e assume conectado para testes / dev
+        }
+
+        return true;
     }
 
     protected function handleNetworkException(Throwable $e): never
