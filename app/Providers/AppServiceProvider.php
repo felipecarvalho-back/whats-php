@@ -4,14 +4,17 @@ namespace App\Providers;
 
 use App\NativeComponents\ConversationCard;
 use App\NativeComponents\MessageBubble;
+use App\Services\ApiService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Native\Mobile\Edge\ComponentRegistry;
+use Native\Mobile\Events\PushNotification\TokenGenerated;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -44,6 +47,22 @@ class AppServiceProvider extends ServiceProvider
             'conversation-card' => ConversationCard::class,
             'message-bubble' => MessageBubble::class,
         ]);
+
+        // Escuta tokens gerados pelo Firebase FCM e registra na API
+        try {
+            if (class_exists(TokenGenerated::class)) {
+                Event::listen(
+                    TokenGenerated::class,
+                    function (TokenGenerated $event): void {
+                        if (! empty($event->token)) {
+                            app(ApiService::class)->registerFcmToken($event->token);
+                        }
+                    }
+                );
+            }
+        } catch (Throwable $e) {
+            // Silencia falhas
+        }
     }
 
     /**

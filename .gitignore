@@ -32,3 +32,6 @@ public/vibe/
 .agents
 .claude
 nativephp/
+
+google-services.json
+*-firebase-adminsdk-*.json
