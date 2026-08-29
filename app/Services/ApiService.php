@@ -238,6 +238,22 @@ class ApiService
     }
 
     /**
+     * Marcar todas as mensagens de uma conversa como lidas na API NestJS
+     *
+     * @return array<string, mixed>
+     */
+    public function markConversationAsRead(int $conversationId): array
+    {
+        try {
+            $response = $this->client()->patch("/conversations/{$conversationId}/read");
+
+            return $response->successful() ? $response->json() : [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function getContacts(): array

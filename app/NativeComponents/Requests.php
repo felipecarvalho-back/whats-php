@@ -7,6 +7,7 @@ use App\Services\ChatSyncService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Computed;
+use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
 
 class Requests extends NativeComponent
@@ -16,6 +17,7 @@ class Requests extends NativeComponent
         $this->refreshRequests();
     }
 
+    #[Poll(3500)]
     public function refreshRequests(): void
     {
         app(ChatSyncService::class)->syncPendingRequests();

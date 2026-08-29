@@ -149,6 +149,31 @@ class ChatSyncService
     }
 
     /**
+     * Marca todas as mensagens recebidas de uma conversa como lidas localmente e na API
+     */
+    public function markConversationAsRead(Conversation $conversation): void
+    {
+        // 1. Zera contador de não lidas localmente
+        $conversation->update(['unread_count' => 0]);
+
+        // 2. Atualiza mensagens recebidas no SQLite local para 'read'
+        Message::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('sender_id', '!=', 0)
+            ->where('status', '!=', 'read')
+            ->update(['status' => 'read']);
+
+        // 3. Dispara notificação de leitura para a API remota
+        if ($conversation->remote_id) {
+            try {
+                $this->apiService->markConversationAsRead($conversation->remote_id);
+            } catch (Exception $e) {
+                // Silencia falha para manter fluidez
+            }
+        }
+    }
+
+    /**
      * Envia mensagem com atualização otimista imediata no SQLite local e disparo para a API
      */
     public function sendMessage(Conversation $conversation, string $content): Message
@@ -209,17 +234,11 @@ class ChatSyncService
             return;
         }
 
-        $lastRemoteMessage = Message::query()
-            ->where('conversation_id', $conversation->id)
-            ->whereNotNull('remote_id')
-            ->latest('remote_id')
-            ->first();
-
-        $sinceId = $lastRemoteMessage?->remote_id;
         $currentUserId = (int) (AuthSession::current()?->user_id ?? 1);
 
         try {
-            $remoteMessages = $this->apiService->getMessages($conversation->remote_id, $sinceId);
+            // Busca mensagens recentes para atualizar novos envios e status de leitura
+            $remoteMessages = $this->apiService->getMessages($conversation->remote_id);
 
             foreach ($remoteMessages as $remoteMsg) {
                 // 1. Procura mensagem local já existente por tempId ou remote_id
@@ -233,15 +252,18 @@ class ChatSyncService
                 }
 
                 if ($existing) {
-                    $existing->update([
-                        'remote_id' => $remoteMsg['id'],
-                        'status' => mb_strtolower($remoteMsg['status'] ?? 'sent'),
-                    ]);
+                    $newStatus = mb_strtolower($remoteMsg['status'] ?? $existing->status);
+                    if ($existing->status !== $newStatus || ! $existing->remote_id) {
+                        $existing->update([
+                            'remote_id' => $remoteMsg['id'],
+                            'status' => $newStatus,
+                        ]);
+                    }
 
                     continue;
                 }
 
-                // 2. Se for nova mensagem
+                // 2. Se for nova mensagem recebida ou enviada
                 $isFromMe = ((int) ($remoteMsg['senderId'] ?? 0)) === $currentUserId;
 
                 Message::query()->create([

@@ -134,3 +134,46 @@ it('syncs remote messages and matches incoming vs outgoing correctly', function 
         ->and($msg2->isOutgoing())->toBeFalse()
         ->and($msg2->status)->toBe('delivered');
 });
+
+it('marks conversation and received messages as read in local SQLite and notifies API', function () {
+    $contact = Contact::create(['remote_id' => 3, 'name' => 'Lucas']);
+    $conversation = Conversation::create([
+        'remote_id' => 25,
+        'contact_id' => $contact->id,
+        'unread_count' => 2,
+    ]);
+
+    $incomingMsg1 = Message::create([
+        'remote_id' => 201,
+        'conversation_id' => $conversation->id,
+        'sender_id' => $contact->id,
+        'content' => 'Mensagem 1',
+        'type' => 'text',
+        'status' => 'delivered',
+    ]);
+
+    $incomingMsg2 = Message::create([
+        'remote_id' => 202,
+        'conversation_id' => $conversation->id,
+        'sender_id' => $contact->id,
+        'content' => 'Mensagem 2',
+        'type' => 'text',
+        'status' => 'sent',
+    ]);
+
+    Http::fake([
+        '*/api/conversations/25/read' => Http::response(['success' => true, 'markedCount' => 2], 200),
+    ]);
+
+    $auth = new AuthService;
+    $api = new ApiService($auth);
+    $sync = new ChatSyncService($api);
+
+    $sync->markConversationAsRead($conversation);
+
+    expect($conversation->fresh()->unread_count)->toBe(0)
+        ->and($incomingMsg1->fresh()->status)->toBe('read')
+        ->and($incomingMsg2->fresh()->status)->toBe('read');
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/conversations/25/read'));
+});

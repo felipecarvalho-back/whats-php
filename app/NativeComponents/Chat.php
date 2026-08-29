@@ -27,8 +27,9 @@ class Chat extends NativeComponent
 
         $conversation = $this->conversation;
         if ($conversation) {
-            $conversation->update(['unread_count' => 0]);
-            app(ChatSyncService::class)->syncMessages($conversation);
+            $syncService = app(ChatSyncService::class);
+            $syncService->markConversationAsRead($conversation);
+            $syncService->syncMessages($conversation);
         }
     }
 
@@ -116,7 +117,9 @@ class Chat extends NativeComponent
     {
         $conversation = $this->conversation;
         if ($conversation) {
-            app(ChatSyncService::class)->syncMessages($conversation);
+            $syncService = app(ChatSyncService::class);
+            $syncService->syncMessages($conversation);
+            $syncService->markConversationAsRead($conversation);
         }
     }
 

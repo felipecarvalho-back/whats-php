@@ -8,6 +8,7 @@ use App\Services\ChatSyncService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\View;
 use Native\Mobile\Attributes\Computed;
+use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
 
 class Conversations extends NativeComponent
@@ -39,6 +40,7 @@ class Conversations extends NativeComponent
         $this->replace('/login');
     }
 
+    #[Poll(3000)]
     public function refreshConversations(): void
     {
         $syncService = app(ChatSyncService::class);
