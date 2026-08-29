@@ -3,7 +3,6 @@
 namespace App\NativeComponents;
 
 use App\Models\Conversation;
-use App\Services\ApiService;
 use App\Services\AuthService;
 use App\Services\ChatSyncService;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,7 +10,6 @@ use Illuminate\View\View;
 use Native\Mobile\Attributes\Computed;
 use Native\Mobile\Attributes\Poll;
 use Native\Mobile\Edge\NativeComponent;
-use Native\Mobile\Facades\PushNotifications;
 
 class Conversations extends NativeComponent
 {
@@ -24,22 +22,6 @@ class Conversations extends NativeComponent
         }
 
         $this->refreshConversations();
-        $this->enrollPushNotifications();
-    }
-
-    protected function enrollPushNotifications(): void
-    {
-        try {
-            if (class_exists(PushNotifications::class)) {
-                PushNotifications::enroll();
-                $token = PushNotifications::getToken();
-                if (! empty($token)) {
-                    app(ApiService::class)->registerFcmToken($token);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Silencia falhas de ambiente não nativo
-        }
     }
 
     public function newChat(): void

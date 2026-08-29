@@ -7,7 +7,6 @@ use App\Services\AuthService;
 use Exception;
 use Illuminate\View\View;
 use Native\Mobile\Edge\NativeComponent;
-use Native\Mobile\Facades\PushNotifications;
 
 class Login extends NativeComponent
 {
@@ -90,19 +89,6 @@ class Login extends NativeComponent
                 token: (string) ($response['token'] ?? ''),
                 username: (string) ($user['username'] ?? ltrim($identifier, '@'))
             );
-
-            // Registra o token FCM se disponível no dispositivo
-            try {
-                if (class_exists(PushNotifications::class)) {
-                    PushNotifications::enroll();
-                    $token = PushNotifications::getToken();
-                    if (! empty($token)) {
-                        $apiService->registerFcmToken($token);
-                    }
-                }
-            } catch (\Throwable $e) {
-                // Silencia falhas
-            }
 
             $this->replace('/');
         } catch (Exception $e) {

@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use Blutrixx\Fcm\FcmServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Providers\BrowserServiceProvider;
 use Native\Mobile\Providers\NetworkServiceProvider;
@@ -43,8 +42,6 @@ class NativeServiceProvider extends ServiceProvider
             BrowserServiceProvider::class,
             NativephpEnhancedSplashServiceProvider::class,
             NetworkServiceProvider::class,
-            FcmServiceProvider::class,
-
         ];
     }
 }

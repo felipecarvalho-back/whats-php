@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3dae8731fce93aadf55775ec7a52dd43",
+    "content-hash": "670e16bc432a240238e2bc8688f10e38",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -60,50 +60,6 @@
                 "source": "https://github.com/Bacon/BaconQrCode/tree/v3.1.1"
             },
             "time": "2026-04-05T21:06:35+00:00"
-        },
-        {
-            "name": "blutrixx/nativephp-fcm",
-            "version": "1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/joelnjoshkibona/nativephp-fcm.git",
-                "reference": "2fc319bb07a961d8718c441c68787bc454bbf82a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/joelnjoshkibona/nativephp-fcm/zipball/2fc319bb07a961d8718c441c68787bc454bbf82a",
-                "reference": "2fc319bb07a961d8718c441c68787bc454bbf82a",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1"
-            },
-            "type": "nativephp-plugin",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Blutrixx\\Fcm\\FcmServiceProvider"
-                    ]
-                },
-                "nativephp": {
-                    "manifest": "nativephp.json"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Blutrixx\\Fcm\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Firebase Cloud Messaging (FCM) push notification plugin for NativePHP Mobile",
-            "support": {
-                "issues": "https://github.com/joelnjoshkibona/nativephp-fcm/issues",
-                "source": "https://github.com/joelnjoshkibona/nativephp-fcm/tree/v1.0.0"
-            },
-            "time": "2026-08-14T14:01:20+00:00"
         },
         {
             "name": "brick/math",

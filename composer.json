@@ -19,7 +19,6 @@
     ],
     "require": {
         "php": "^8.4",
-        "blutrixx/nativephp-fcm": "*",
         "laravel/boost": "^2.2",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
@@ -45,8 +44,7 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Unloc\\NativephpEnhancedSplash\\": "vendor/unloc/nativephp-enhanced-splash/src/",
-            "Native\\Mobile\\Providers\\": "vendor/nativephp/mobile-network/src/",
-            "Blutrixx\\Fcm\\": "vendor/blutrixx/nativephp-fcm/src/"
+            "Native\\Mobile\\Providers\\": "vendor/nativephp/mobile-network/src/"
         }
     },
     "autoload-dev": {
