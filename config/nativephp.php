@@ -489,10 +489,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Android SDK Path
+    | Android Configuration
     |--------------------------------------------------------------------------
     */
     'android' => [
         'android_sdk_path' => env('ANDROID_HOME', 'D:/Android/sdk'),
+        '7zip-location' => env('NATIVEPHP_7ZIP_LOCATION', 'C:\\Program Files\\7-Zip\\7z.exe'),
     ],
 ];
