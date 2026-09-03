@@ -3,6 +3,7 @@
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\NativeComponents\Chat;
 use App\Services\ApiService;
 use App\Services\AuthService;
 use App\Services\ChatSyncService;
@@ -176,4 +177,78 @@ it('marks conversation and received messages as read in local SQLite and notifie
         ->and($incomingMsg2->fresh()->status)->toBe('read');
 
     Http::assertSent(fn ($request) => str_contains($request->url(), '/conversations/25/read'));
+});
+
+it('retries sending pending messages when connectivity is restored', function () {
+    $contact = Contact::create(['remote_id' => 8, 'name' => 'Ana']);
+    $conversation = Conversation::create([
+        'remote_id' => 88,
+        'contact_id' => $contact->id,
+    ]);
+
+    $pending1 = Message::create([
+        'temp_id' => 'temp-1',
+        'conversation_id' => $conversation->id,
+        'sender_id' => 0,
+        'content' => 'Mensagem pendente 1',
+        'status' => 'pending',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $pending2 = Message::create([
+        'temp_id' => 'temp-2',
+        'conversation_id' => $conversation->id,
+        'sender_id' => 0,
+        'content' => 'Mensagem pendente 2',
+        'status' => 'pending',
+        'created_at' => now(),
+    ]);
+
+    Http::fake([
+        '*/api/conversations/88/messages' => Http::sequence()
+            ->push(['id' => 501, 'status' => 'SENT', 'content' => 'Mensagem pendente 1'], 201)
+            ->push(['id' => 502, 'status' => 'SENT', 'content' => 'Mensagem pendente 2'], 201),
+    ]);
+
+    $auth = new AuthService;
+    $api = new ApiService($auth);
+    $sync = new ChatSyncService($api);
+
+    $sentCount = $sync->retryPendingMessages($conversation);
+
+    expect($sentCount)->toBe(2)
+        ->and($pending1->fresh()->status)->toBe('sent')
+        ->and($pending1->fresh()->remote_id)->toBe(501)
+        ->and($pending2->fresh()->status)->toBe('sent')
+        ->and($pending2->fresh()->remote_id)->toBe(502);
+});
+
+it('groups chat messages by date with proper labels', function () {
+    $contact = Contact::create(['name' => 'Roberto']);
+    $conversation = Conversation::create(['contact_id' => $contact->id]);
+
+    Message::create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => 0,
+        'content' => 'Mensagem de ontem',
+        'created_at' => now()->subDay(),
+    ]);
+
+    Message::create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => 0,
+        'content' => 'Mensagem de hoje',
+        'created_at' => now(),
+    ]);
+
+    $chat = new Chat;
+    $chat->conversationId = $conversation->id;
+
+    $groups = $chat->groupedMessages();
+
+    expect($groups)->toBeArray()->toHaveCount(2)
+        ->and($groups[0]['date_label'])->toBe('Ontem')
+        ->and($groups[0]['messages'])->toHaveCount(1)
+        ->and($groups[1]['date_label'])->toBe('Hoje')
+        ->and($groups[1]['messages'])->toHaveCount(1);
 });

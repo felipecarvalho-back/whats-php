@@ -230,6 +230,45 @@ class ChatSyncService
     }
 
     /**
+     * Reenvia mensagens pendentes da conversa quando houver conexão (Outbox Pattern)
+     */
+    public function retryPendingMessages(Conversation $conversation): int
+    {
+        if (! $conversation->remote_id || ! $this->apiService->isConnected()) {
+            return 0;
+        }
+
+        $pendingMessages = Message::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('sender_id', 0)
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $sentCount = 0;
+        foreach ($pendingMessages as $pendingMsg) {
+            try {
+                $response = $this->apiService->sendMessage(
+                    $conversation->remote_id,
+                    $pendingMsg->content,
+                    $pendingMsg->temp_id
+                );
+
+                $pendingMsg->update([
+                    'remote_id' => $response['id'] ?? null,
+                    'status' => mb_strtolower($response['status'] ?? 'sent'),
+                ]);
+                $sentCount++;
+            } catch (Exception $e) {
+                // Interrompe na primeira falha para respeitar a ordem cronológica
+                break;
+            }
+        }
+
+        return $sentCount;
+    }
+
+    /**
      * Sincroniza mensagens remotas da conversa para o banco local
      */
     public function syncMessages(Conversation $conversation): void
@@ -241,6 +280,9 @@ class ChatSyncService
         if (! $conversation->remote_id) {
             return;
         }
+
+        // Tenta reenviar mensagens locais pendentes primeiro
+        $this->retryPendingMessages($conversation);
 
         $currentUserId = (int) (AuthSession::current()?->user_id ?? 1);
 

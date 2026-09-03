@@ -28,15 +28,6 @@
     {{-- Lista de Mensagens com Scroll Ancorado no Fim --}}
     <native:scroll-view scroll-anchor="bottom" class="w-full flex-1 bg-theme-surface-variant px-2 py-3">
         <native:column class="w-full gap-2">
-            {{-- Pílula Centralizada de Data (WhatsApp Style) --}}
-            <native:row class="w-full justify-center my-1.5">
-                <native:column class="px-3 py-1 rounded-lg bg-theme-surface/90 shadow-xs border border-theme-outline items-center justify-center">
-                    <native:text class="text-xs font-medium text-theme-on-surface-variant">
-                        Hoje
-                    </native:text>
-                </native:column>
-            </native:row>
-
             @if($conversation?->isPending())
                 <native:row class="w-full justify-center my-1">
                     <native:column class="px-4 py-2 rounded-xl bg-theme-surface border border-theme-outline items-center justify-center max-w-[340]">
@@ -47,12 +38,23 @@
                 </native:row>
             @endif
 
-            {{-- Mensagens --}}
-            @forelse($messages as $message)
-                <native:message-bubble
-                    :message="$message"
-                    key="msg-{{ $message->id }}"
-                />
+            {{-- Mensagens Agrupadas por Data (WhatsApp Style) --}}
+            @forelse($groupedMessages as $group)
+                {{-- Pílula Centralizada de Data --}}
+                <native:row class="w-full justify-center my-2">
+                    <native:column class="px-3.5 py-1 rounded-lg bg-theme-surface/90 shadow-xs border border-theme-outline items-center justify-center">
+                        <native:text class="text-xs font-semibold text-theme-on-surface-variant tracking-wide">
+                            {{ $group['date_label'] }}
+                        </native:text>
+                    </native:column>
+                </native:row>
+
+                @foreach($group['messages'] as $message)
+                    <native:message-bubble
+                        :message="$message"
+                        key="msg-{{ $message->id }}"
+                    />
+                @endforeach
             @empty
                 <native:column fill center class="py-12 gap-2">
                     <native:text class="text-sm text-theme-on-surface-variant text-center">
